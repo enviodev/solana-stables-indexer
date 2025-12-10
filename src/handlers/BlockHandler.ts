@@ -3,6 +3,8 @@
  */
 import { onBlock } from "generated";
 import { createEffect, S } from "envio";
+import { BigDecimal } from "generated";
+import { processInstruction } from "../utils/helpers";
 
 const tokenBalanceSchema = S.schema({
   accountIndex: S.number,
@@ -192,5 +194,43 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
     return tx.meta && !tx.meta.err;
   }) || [];
 
-  context.log.info(`Block processed. Total transactions: ${block.transactions?.length || 0}. Successful: ${successfulTransactions.length}`);
+  for (const tx of successfulTransactions) {
+    if (!tx.meta) continue;
+
+    const allInstructions = [
+      ...tx.transaction.message.instructions,
+      ...(tx.meta.innerInstructions?.flatMap((i) => i.instructions) || []),
+    ];
+
+    allInstructions.forEach((inst, index) => {
+      // Use the helper to process the instruction
+      const transfer = processInstruction(
+        inst as any, // Cast to match helper input structure since S.schema types are complex
+        tx.meta?.preTokenBalances as any, // Cast for helper compatibility
+        tx.meta?.postTokenBalances as any
+      );
+
+      if (transfer) {
+        context.Transfer.set({
+          id: `${tx.transaction.signatures[0]}-${index}`,
+          transactionHash: tx.transaction.signatures[0] || "",
+          slot: slot,
+          timestamp: block.blockTime ? new Date(block.blockTime * 1000) : new Date(0),
+          sender: transfer.sender,
+          receiver: transfer.receiver,
+          mint: transfer.mint,
+          symbol: transfer.symbol,
+          amount: transfer.amount,
+          amountDisplay: transfer.amountDisplay,
+        });
+        context.log.info(
+          `Transfer found: ${transfer.amountDisplay.toString()} ${transfer.symbol} (${transfer.mint}) from ${transfer.sender} to ${transfer.receiver}`
+        );
+      }
+    });
+  }
+
+  context.log.info(
+    `Block processed. Total transactions: ${block.transactions?.length || 0}. Successful: ${successfulTransactions.length}`
+  );
 });

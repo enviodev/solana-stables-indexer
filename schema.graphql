@@ -4,3 +4,16 @@ type BlockInfo {
   height: Int
   time: Timestamp
 }
+
+type Transfer {
+  id: ID! # transactionHash-index
+  transactionHash: String!
+  slot: Int!
+  timestamp: Timestamp!
+  sender: String!
+  receiver: String!
+  mint: String!
+  symbol: String!
+  amount: BigInt! # Raw amount
+  amountDisplay: BigDecimal! # UI amount
+}
