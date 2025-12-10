@@ -30,6 +30,7 @@ const getBlockEffect = createEffect(
             maxSupportedTransactionVersion: 0,
             transactionDetails: "full",
             encoding: "jsonParsed",
+            rewards: false,
           },
         ],
       }),

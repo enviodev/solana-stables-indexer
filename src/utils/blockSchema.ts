@@ -67,14 +67,15 @@ const rewardSchema = S.schema({
 
 const transactionMetaSchema = S.schema({
   err: S.nullable(S.union([S.string, S.object((_) => ({}))])),
-  fee: S.number,
+  // fee: S.number,
   innerInstructions: S.nullable(S.array(innerInstructionSchema)),
-  logMessages: S.nullable(S.array(S.string)),
-  postBalances: S.array(S.number),
+  // logMessages: S.nullable(S.array(S.string)),
+  // postBalances: S.array(S.number),
   postTokenBalances: S.optional(S.array(tokenBalanceSchema)),
-  preBalances: S.array(S.number),
+  // preBalances: S.array(S.number),
   preTokenBalances: S.optional(S.array(tokenBalanceSchema)),
-  rewards: S.nullable(S.array(rewardSchema)),
+  // rewards: S.nullable(S.array(rewardSchema)),
+  /*
   loadedAddresses: S.optional(
     S.schema({
       writable: S.array(S.string),
@@ -88,11 +89,13 @@ const transactionMetaSchema = S.schema({
     })
   ),
   computeUnitsConsumed: S.optional(S.number),
+  */
   version: S.optional(S.union([S.string, S.number])),
 });
 
 const transactionDataSchema = S.schema({
   message: S.schema({
+    /*
     accountKeys: S.array(
       S.schema({
         pubkey: S.string,
@@ -102,6 +105,7 @@ const transactionDataSchema = S.schema({
       })
     ),
     recentBlockhash: S.string,
+    */
     instructions: S.array(instructionParsedSchema),
   }),
   signatures: S.array(S.string),
