@@ -42,61 +42,72 @@ export function processInstruction(
   preTokenBalances: TokenBalance[] | undefined,
   postTokenBalances: TokenBalance[] | undefined
 ): ProcessedTransfer | undefined {
+  // 1. Fast fail on basic structure
   if (!inst.parsed || typeof inst.parsed === "string") return undefined;
 
   const type = inst.parsed.type;
+  // 2. Fast fail on instruction type
+  if (type !== "transfer" && type !== "transferChecked") return undefined;
+
   const info = inst.parsed.info;
-
   let mint: string | undefined;
-  let amount: bigint | undefined;
-  let amountDisplay: number | undefined;
-  let sender: string | undefined;
-  let receiver: string | undefined;
 
-  // Handle TransferChecked (Explicit Mint)
+  // 3. Resolve Mint & Fail Fast
   if (type === "transferChecked") {
     mint = info.mint;
-    sender = info.source;
-    receiver = info.destination;
+    // Immediate check for TransferChecked
+    if (!mint || !ACCEPTED_MINTS.includes(mint)) return undefined;
+  } else if (type === "transfer") {
+    // For implicit transfer, we must look it up.
+    // Optimization: Check sender existence first
+    const sender = info.source;
+    if (!sender) return undefined;
+
+    const balance =
+      preTokenBalances?.find((b) => b.owner === sender) ||
+      postTokenBalances?.find((b) => b.owner === sender);
+
+    if (balance) {
+      mint = balance.mint;
+    }
+    // Immediate check after lookup
+    if (!mint || !ACCEPTED_MINTS.includes(mint)) return undefined;
+  }
+
+  // 4. Extract remaining data (only if mint is accepted)
+  let amount: bigint | undefined;
+  let amountDisplay: number | undefined;
+  const sender = info.source;
+  const receiver = info.destination;
+
+  if (type === "transferChecked") {
     if (info.tokenAmount) {
       amount = BigInt(info.tokenAmount.amount);
       amountDisplay =
         Number(info.tokenAmount.amount) / Math.pow(10, info.tokenAmount.decimals);
     }
-  }
-  // Handle Transfer (Implicit Mint - Requires Lookup)
-  else if (type === "transfer") {
-    sender = info.source;
-    receiver = info.destination;
+  } else {
+    // legacy transfer
     if (info.amount) {
       amount = BigInt(info.amount);
-    }
-
-    // Try to find mint from pre/post token balances
-    if (sender) {
+      // We need decimals from the balance lookup we did earlier
+      // Re-finding balance is cheap since we know it exists, or we could pass it down
+      // But for cleaner code structure locally, re-find or optimization:
+      // The logic above ensures 'mint' is found via balance.
+      // Let's assume we can get decimals from the same place.
       const balance =
         preTokenBalances?.find((b) => b.owner === sender) ||
         postTokenBalances?.find((b) => b.owner === sender);
 
-      if (balance) {
-        mint = balance.mint;
-        // Calculate UI amount if we only have raw amount
-        if (amount && balance.uiTokenAmount.decimals) {
-          amountDisplay =
-            Number(amount) / Math.pow(10, balance.uiTokenAmount.decimals);
-        }
+      if (balance && amount) {
+        amountDisplay =
+          Number(amount) / Math.pow(10, balance.uiTokenAmount.decimals);
       }
     }
   }
 
-  // Filter
-  if (
-    mint &&
-    ACCEPTED_MINTS.includes(mint) &&
-    amount !== undefined &&
-    sender &&
-    receiver
-  ) {
+  // Final validation
+  if (amount !== undefined && sender && receiver && mint) {
     return {
       mint,
       symbol: MINT_MAP[mint] || "UNKNOWN",
