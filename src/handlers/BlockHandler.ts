@@ -90,9 +90,6 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
           amount: transfer.amount,
           amountDisplay: transfer.amountDisplay,
         });
-        context.log.info(
-          `Transfer found: ${transfer.amountDisplay.toString()} ${transfer.symbol} (${transfer.mint}) from ${transfer.sender} to ${transfer.receiver}`
-        );
       }
     });
 
