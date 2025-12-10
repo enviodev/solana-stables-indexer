@@ -17,3 +17,14 @@ type Transfer {
   amount: BigInt! # Raw amount
   amountDisplay: BigDecimal! # UI amount
 }
+
+type TransferSummary {
+  id: ID! # Timestamp of the start of the minute (bucket)
+  minute: String! # ISO timestamp
+  totalTransfers: Int!
+  totalVolumeUSD: BigDecimal!
+  usdcTransfers: Int!
+  usdtTransfers: Int!
+  usdcVolumeUSD: BigDecimal!
+  usdtVolumeUSD: BigDecimal!
+}

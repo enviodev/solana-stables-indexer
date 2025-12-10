@@ -24,7 +24,7 @@ interface ParsedInfo {
   };
 }
 
-interface ProcessedTransfer {
+export interface ProcessedTransfer {
   mint: string;
   symbol: string;
   amount: bigint;

@@ -1,9 +1,9 @@
 /*
  * Please refer to https://docs.envio.dev for a thorough guide on all Envio indexer features
  */
-import { onBlock } from "generated";
+import { onBlock, type TransferSummary, BigDecimal } from "generated";
 import { createEffect, S } from "envio";
-import { processInstruction } from "../utils/helpers";
+import { processInstruction, type ProcessedTransfer } from "../utils/helpers";
 import { nullableBlockSchema, getBlockDataSchema } from "../utils/blockSchema";
 
 const getBlockEffect = createEffect(
@@ -66,6 +66,9 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
     return tx.meta && !tx.meta.err;
   }) || [];
 
+  // Track transfers found in this block to aggregate for summary
+  const blockTransfers: ProcessedTransfer[] = [];
+
   for (const tx of successfulTransactions) {
     if (!tx.meta) continue;
 
@@ -78,6 +81,7 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
       );
 
       if (transfer) {
+        blockTransfers.push(transfer);
         context.Transfer.set({
           id: `${tx.transaction.signatures[0]}-top-${index}`,
           transactionHash: tx.transaction.signatures[0] || "",
@@ -104,6 +108,7 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
           );
 
           if (transfer) {
+            blockTransfers.push(transfer);
             context.Transfer.set({
               id: `${tx.transaction.signatures[0]}-inner-${inner.index}-${innerIndex}`,
               transactionHash: tx.transaction.signatures[0] || "",
@@ -118,10 +123,61 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
               amount: transfer.amount,
               amountDisplay: transfer.amountDisplay,
             });
+            context.log.info(
+              `Transfer found: ${transfer.amountDisplay.toString()} ${transfer.symbol} (${transfer.mint}) from ${transfer.sender} to ${transfer.receiver}`
+            );
           }
         });
       });
     }
+  }
+
+  // Update Minute Summary if there are transfers
+  if (blockTransfers.length > 0 && block.blockTime) {
+    const timestamp = block.blockTime * 1000;
+    const date = new Date(timestamp);
+    // Round down to minute
+    date.setSeconds(0, 0);
+    const minuteId = (date.getTime() / 1000).toString(); // Using seconds timestamp as ID for consistency
+    const minuteIso = date.toISOString();
+
+    let summary = await context.TransferSummary.get(minuteId);
+
+    if (!summary) {
+      summary = {
+        id: minuteId,
+        minute: minuteIso,
+        totalTransfers: 0,
+        totalVolumeUSD: new BigDecimal(0),
+        usdcTransfers: 0,
+        usdtTransfers: 0,
+        usdcVolumeUSD: new BigDecimal(0),
+        usdtVolumeUSD: new BigDecimal(0),
+      };
+    }
+
+    // Aggregate values
+    for (const t of blockTransfers) {
+      summary = {
+        ...summary,
+        totalTransfers: summary.totalTransfers + 1,
+        totalVolumeUSD: summary.totalVolumeUSD.plus(t.amountDisplay),
+        usdcTransfers:
+          t.symbol === "USDC" ? summary.usdcTransfers + 1 : summary.usdcTransfers,
+        usdtTransfers:
+          t.symbol === "USDT" ? summary.usdtTransfers + 1 : summary.usdtTransfers,
+        usdcVolumeUSD:
+          t.symbol === "USDC"
+            ? summary.usdcVolumeUSD.plus(t.amountDisplay)
+            : summary.usdcVolumeUSD,
+        usdtVolumeUSD:
+          t.symbol === "USDT"
+            ? summary.usdtVolumeUSD.plus(t.amountDisplay)
+            : summary.usdtVolumeUSD,
+      };
+    }
+
+    context.TransferSummary.set(summary);
   }
 
   context.log.info(
