@@ -4,4 +4,4 @@ ecosystem: solana
 full_batch_size: 6
 chains:
   - rpc: ${ENVIO_MAINNET_RPC_URL:-https://api.mainnet-beta.solana.com}
-    start_block: 385982000
+    start_block: 3859891000
