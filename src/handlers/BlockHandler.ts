@@ -11,10 +11,12 @@ const getBlockEffect = createEffect(
     name: "getBlock",
     input: { slot: S.number },
     output: nullableBlockSchema,
-    rateLimit: { calls: 10, per: "second" },
+    rateLimit: { calls: 100, per: "second" },
   },
   async ({ input, context }) => {
-    const res = await fetch(process.env.ENVIO_MAINNET_RPC_URL!, {
+    //return undefined
+    const usePrimaryURL = input.slot % 2 ===0
+    const res = await fetch(usePrimaryURL ? process.env.ENVIO_MAINNET_RPC_URL! : process.env.ENVIO_MAINNET_RPC_URL_2!, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -123,9 +125,6 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
               amount: transfer.amount,
               amountDisplay: transfer.amountDisplay,
             });
-            context.log.info(
-              `Transfer found: ${transfer.amountDisplay.toString()} ${transfer.symbol} (${transfer.mint}) from ${transfer.sender} to ${transfer.receiver}`
-            );
           }
         });
       });
