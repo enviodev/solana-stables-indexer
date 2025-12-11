@@ -1,14 +1,14 @@
 type BlockInfo {
   id: ID!
   hash: String!
-  height: Int
+  height: Int @index
   time: Timestamp
 }
 
 type Transfer {
   id: ID! # transactionHash-index
   transactionHash: String!
-  slot: Int!
+  slot: Int! @index
   timestamp: Timestamp!
   sender: String!
   receiver: String!

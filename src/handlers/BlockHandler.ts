@@ -132,18 +132,17 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
 
   // Update Minute Summary if there are transfers
   if (blockTransfers.length > 0 && block.blockTime) {
+    // Use a fixed ID for singleton summary
+    const SUMMARY_ID = "LATEST_SUMMARY";
     const timestamp = block.blockTime * 1000;
     const date = new Date(timestamp);
-    // Round down to minute
-    date.setSeconds(0, 0);
-    const minuteId = (date.getTime() / 1000).toString(); // Using seconds timestamp as ID for consistency
-    const minuteIso = date.toISOString();
+    const minuteIso = date.toISOString(); // Current minute timestamp for display
 
-    let summary = await context.TransferSummary.get(minuteId);
+    let summary = await context.TransferSummary.get(SUMMARY_ID);
 
     if (!summary) {
       summary = {
-        id: minuteId,
+        id: SUMMARY_ID,
         minute: minuteIso,
         totalTransfers: 0,
         totalVolumeUSD: new BigDecimal(0),
@@ -152,6 +151,37 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
         usdcVolumeUSD: new BigDecimal(0),
         usdtVolumeUSD: new BigDecimal(0),
       };
+    } else {
+      // If we are reusing the same entity, we might want to reset counters if the minute has changed?
+      // Or if this is truly a "rolling" summary of the "current" minute?
+      // If it's a singleton for the "latest minute", we need to detect if the minute changed.
+      
+      // Let's assume we want to reset if the stored minute is different from current block minute
+      const currentMinute = new Date(timestamp);
+      currentMinute.setSeconds(0, 0);
+      
+      const storedMinute = new Date(summary.minute);
+      storedMinute.setSeconds(0, 0);
+      
+      if (currentMinute.getTime() > storedMinute.getTime()) {
+        // New minute started, reset counters
+        summary = {
+          ...summary,
+          minute: minuteIso,
+          totalTransfers: 0,
+          totalVolumeUSD: new BigDecimal(0),
+          usdcTransfers: 0,
+          usdtTransfers: 0,
+          usdcVolumeUSD: new BigDecimal(0),
+          usdtVolumeUSD: new BigDecimal(0),
+        };
+      } else {
+         // Same minute, update timestamp to latest (so UI knows it's fresh)
+         summary = {
+           ...summary,
+           minute: minuteIso
+         };
+      }
     }
 
     // Aggregate values
@@ -182,3 +212,27 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
     `Block processed. Total transactions: ${block.transactions?.length || 0}. Successful: ${successfulTransactions.length}`
   );
 });
+
+onBlock(
+  {
+    name: "PruneEntities",
+    chain: 0,
+    interval: 1500, 
+  },
+  async ({ slot, context }) => {
+    const PRUNE_THRESHOLD = 1500;
+    const cutoffSlot = slot - PRUNE_THRESHOLD;
+
+    const toDelete = await context.Transfer.getWhere.slot.lt(cutoffSlot)
+
+    for (const transfer of toDelete) {
+      context.Transfer.deleteUnsafe(transfer.id);
+    }
+
+    const oldBlocks = await context.BlockInfo.getWhere.height.lt(cutoffSlot);
+
+    for (const block of oldBlocks) {
+      context.BlockInfo.deleteUnsafe(block.id);
+    }
+  }
+);
