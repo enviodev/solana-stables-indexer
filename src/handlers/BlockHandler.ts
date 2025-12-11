@@ -14,7 +14,6 @@ const getBlockEffect = createEffect(
     rateLimit: { calls: 100, per: "second" },
   },
   async ({ input, context }) => {
-    //return undefined
     const usePrimaryURL = input.slot % 2 ===0
     const res = await fetch(usePrimaryURL ? process.env.ENVIO_MAINNET_RPC_URL! : process.env.ENVIO_MAINNET_RPC_URL_2!, {
       method: "POST",
