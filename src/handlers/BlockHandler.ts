@@ -44,6 +44,11 @@ const getBlockEffect = createEffect(
     }
     const parsedData = S.parseOrThrow(data, getBlockDataSchema);
     if (parsedData.error) {
+       // Check if it is a "skipped slot" or "ledger jump" error
+       if (parsedData.error.includes("skipped") || parsedData.error.includes("missing")) {
+           context.log.warn(`Slot ${input.slot} skipped or missing: ${parsedData.error}`);
+           return undefined;
+       }
       throw new Error(parsedData.error);
     }
     return parsedData.result;
