@@ -1,8 +1,7 @@
 /*
  * Please refer to https://docs.envio.dev for a thorough guide on all Envio indexer features
  */
-import { onBlock, type TransferSummary, BigDecimal } from "generated";
-import { createEffect, S } from "envio";
+import { indexer, createEffect, BigDecimal, S } from "envio";
 import { processInstruction, type ProcessedTransfer } from "../utils/helpers";
 import { nullableBlockSchema, getBlockDataSchema } from "../utils/blockSchema";
 
@@ -14,7 +13,7 @@ const getBlockEffect = createEffect(
     rateLimit: { calls: 100, per: "second" },
   },
   async ({ input, context }) => {
-    const usePrimaryURL = input.slot % 2 ===0
+    const usePrimaryURL = input.slot % 2 === 0;
     const res = await fetch(usePrimaryURL ? process.env.ENVIO_MAINNET_RPC_URL! : process.env.ENVIO_MAINNET_RPC_URL_2!, {
       method: "POST",
       headers: {
@@ -40,22 +39,22 @@ const getBlockEffect = createEffect(
       data = await res.json();
     } catch (error) {
       context.log.warn(`Failed to parse block data`);
-      return undefined;
+      return null;
     }
     const parsedData = S.parseOrThrow(data, getBlockDataSchema);
     if (parsedData.error) {
        // Check if it is a "skipped slot" or "ledger jump" error
        if (parsedData.error.includes("skipped") || parsedData.error.includes("missing")) {
            context.log.warn(`Slot ${input.slot} skipped or missing: ${parsedData.error}`);
-           return undefined;
+           return null;
        }
       throw new Error(parsedData.error);
     }
-    return parsedData.result;
+    return parsedData.result ?? null;
   }
 );
 
-onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
+indexer.onSlot({ name: "BlockTracker" }, async ({ slot, context }) => {
   const block = await context.effect(getBlockEffect, { slot });
   if (!block) {
     context.log.info(`Slot without a block`, { slot });
@@ -64,7 +63,7 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
   context.BlockInfo.set({
     id: slot.toString(),
     hash: block.blockhash,
-    height: block.blockHeight,
+    height: block.blockHeight ?? undefined,
     time: block.blockTime ? new Date(block.blockTime * 1000) : undefined,
   });
 
@@ -160,14 +159,14 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
       // If we are reusing the same entity, we might want to reset counters if the minute has changed?
       // Or if this is truly a "rolling" summary of the "current" minute?
       // If it's a singleton for the "latest minute", we need to detect if the minute changed.
-      
+
       // Let's assume we want to reset if the stored minute is different from current block minute
       const currentMinute = new Date(timestamp);
       currentMinute.setSeconds(0, 0);
-      
+
       const storedMinute = new Date(summary.minute);
       storedMinute.setSeconds(0, 0);
-      
+
       if (currentMinute.getTime() > storedMinute.getTime()) {
         // New minute started, reset counters
         summary = {
@@ -218,23 +217,22 @@ onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
   );
 });
 
-onBlock(
+indexer.onSlot(
   {
     name: "PruneEntities",
-    chain: 0,
-    interval: 1500, 
+    where: () => ({ slot: { _every: 1500 } }),
   },
   async ({ slot, context }) => {
     const PRUNE_THRESHOLD = 1500;
     const cutoffSlot = slot - PRUNE_THRESHOLD;
 
-    const toDelete = await context.Transfer.getWhere.slot.lt(cutoffSlot)
+    const toDelete = await context.Transfer.getWhere({ slot: { _lt: cutoffSlot } });
 
     for (const transfer of toDelete) {
       context.Transfer.deleteUnsafe(transfer.id);
     }
 
-    const oldBlocks = await context.BlockInfo.getWhere.height.lt(cutoffSlot);
+    const oldBlocks = await context.BlockInfo.getWhere({ height: { _lt: cutoffSlot } });
 
     for (const block of oldBlocks) {
       context.BlockInfo.deleteUnsafe(block.id);

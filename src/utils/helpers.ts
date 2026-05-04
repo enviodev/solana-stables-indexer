@@ -1,4 +1,4 @@
-import { BigDecimal } from "generated";
+import { BigDecimal } from "envio";
 import { ACCEPTED_MINTS, MINT_MAP } from "./constants";
 
 // Helper interfaces to avoid circular dependency on full schema if possible,

@@ -47,7 +47,7 @@ export const instructionParsedSchema = S.schema({
   program: S.optional(S.string),
   programId: S.string,
   parsed: S.optional(S.union([parsedObjectSchema, S.string])),
-  stackHeight: S.optional(S.number),
+  stackHeight: S.optional(S.nullable(S.number)),
   accounts: S.optional(S.array(S.string)),
   data: S.optional(S.string),
 });

@@ -3,26 +3,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "mocha": "tsc --noEmit && NODE_OPTIONS='--no-warnings --import tsx' mocha --exit test/**/*.ts",
     "codegen": "envio codegen",
     "dev": "envio dev",
     "start": "envio start",
-    "test": "pnpm mocha"
+    "test": "tsc --noEmit && vitest run"
   },
   "devDependencies": {
-    "@types/chai": "^4.3.11",    
-    "@types/mocha": "10.0.6",
-    "@types/node": "^24.10.1",
-    "typescript": "5.9.3",
-    "chai": "4.3.10",
-    "tsx": "4.21.0",
-    "mocha": "10.2.0"
+    "@types/node": "24.12.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.0"
   },
   "dependencies": {
-    "envio": "3.0.0-alpha.3"
-  },
-  "optionalDependencies": {
-    "generated": "./generated"
+    "envio": "3.0.0-alpha.24"
   },
   "engines": {
     "node": ">=22.0.0"
