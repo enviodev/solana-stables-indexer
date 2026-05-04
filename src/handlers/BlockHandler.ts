@@ -39,18 +39,18 @@ const getBlockEffect = createEffect(
       data = await res.json();
     } catch (error) {
       context.log.warn(`Failed to parse block data`);
-      return undefined;
+      return null;
     }
     const parsedData = S.parseOrThrow(data, getBlockDataSchema);
     if (parsedData.error) {
        // Check if it is a "skipped slot" or "ledger jump" error
        if (parsedData.error.includes("skipped") || parsedData.error.includes("missing")) {
            context.log.warn(`Slot ${input.slot} skipped or missing: ${parsedData.error}`);
-           return undefined;
+           return null;
        }
       throw new Error(parsedData.error);
     }
-    return parsedData.result;
+    return parsedData.result ?? null;
   }
 );
 
@@ -63,7 +63,7 @@ indexer.onSlot({ name: "BlockTracker" }, async ({ slot, context }) => {
   context.BlockInfo.set({
     id: slot.toString(),
     hash: block.blockhash,
-    height: block.blockHeight,
+    height: block.blockHeight ?? undefined,
     time: block.blockTime ? new Date(block.blockTime * 1000) : undefined,
   });
 
