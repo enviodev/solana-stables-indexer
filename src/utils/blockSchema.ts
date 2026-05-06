@@ -45,10 +45,14 @@ const parsedObjectSchema = S.object((s) => ({
 
 export const instructionParsedSchema = S.schema({
   program: S.optional(S.string),
-  programId: S.string,
+  // Some RPC providers return inner instructions with `programIdIndex` only.
+  // Accept both forms; resolve `programIdIndex` -> pubkey at runtime via message.accountKeys.
+  programId: S.optional(S.string),
+  programIdIndex: S.optional(S.number),
   parsed: S.optional(S.union([parsedObjectSchema, S.string])),
   stackHeight: S.optional(S.nullable(S.number)),
-  accounts: S.optional(S.array(S.string)),
+  // `accounts` may be strings (pubkeys) or numeric indices, depending on RPC/encoding.
+  accounts: S.optional(S.array(S.union([S.string, S.number]))),
   data: S.optional(S.string),
 });
 
@@ -95,17 +99,19 @@ const transactionMetaSchema = S.schema({
 
 const transactionDataSchema = S.schema({
   message: S.schema({
-    /*
-    accountKeys: S.array(
-      S.schema({
-        pubkey: S.string,
-        signer: S.boolean,
-        writable: S.boolean,
-        source: S.optional(S.string),
-      })
+    accountKeys: S.optional(
+      S.array(
+        S.union([
+          S.string,
+          S.schema({
+            pubkey: S.string,
+            signer: S.optional(S.boolean),
+            writable: S.optional(S.boolean),
+            source: S.optional(S.string),
+          }),
+        ])
+      )
     ),
-    recentBlockhash: S.string,
-    */
     instructions: S.array(instructionParsedSchema),
   }),
   signatures: S.array(S.string),

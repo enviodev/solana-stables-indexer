@@ -5,6 +5,26 @@ import { indexer, createEffect, BigDecimal, S } from "envio";
 import { processInstruction, type ProcessedTransfer } from "../utils/helpers";
 import { nullableBlockSchema, getBlockDataSchema } from "../utils/blockSchema";
 
+function normalizeInstructionProgramId(inst: any, message: any): any {
+  if (!inst || typeof inst !== "object") return inst;
+  if (typeof inst.programId === "string") return inst;
+
+  const idx = inst.programIdIndex;
+  if (!Number.isInteger(idx)) return inst;
+  const keys = message?.accountKeys;
+  if (!Array.isArray(keys)) return inst;
+
+  const entry = keys[idx];
+  const pubkey =
+    typeof entry === "string"
+      ? entry
+      : entry && typeof entry === "object" && typeof entry.pubkey === "string"
+        ? entry.pubkey
+        : undefined;
+
+  return typeof pubkey === "string" ? { ...inst, programId: pubkey } : inst;
+}
+
 const getBlockEffect = createEffect(
   {
     name: "getBlock",
@@ -13,35 +33,66 @@ const getBlockEffect = createEffect(
     rateLimit: { calls: 100, per: "second" },
   },
   async ({ input, context }) => {
+    const primaryUrl = process.env.ENVIO_MAINNET_RPC_URL;
+    const secondaryUrl = process.env.ENVIO_MAINNET_RPC_URL_2;
+
     const usePrimaryURL = input.slot % 2 === 0;
-    const res = await fetch(usePrimaryURL ? process.env.ENVIO_MAINNET_RPC_URL! : process.env.ENVIO_MAINNET_RPC_URL_2!, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "getBlock",
-        params: [
-          input.slot,
-          {
-            maxSupportedTransactionVersion: 0,
-            transactionDetails: "full",
-            encoding: "jsonParsed",
-            rewards: false,
-          },
-        ],
-      }),
-    });
-    let data;
-    try {
-      data = await res.json();
-    } catch (error) {
-      context.log.warn(`Failed to parse block data`);
-      return null;
+    const firstUrl = usePrimaryURL ? primaryUrl : secondaryUrl;
+    const secondUrl = usePrimaryURL ? secondaryUrl : primaryUrl;
+
+    async function fetchFrom(url: string | undefined) {
+      if (!url) throw new Error("Missing RPC URL (ENVIO_MAINNET_RPC_URL / ENVIO_MAINNET_RPC_URL_2)");
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getBlock",
+          params: [
+            input.slot,
+            {
+              maxSupportedTransactionVersion: 0,
+              transactionDetails: "full",
+              encoding: "jsonParsed",
+              rewards: false,
+            },
+          ],
+        }),
+      });
+      return res.json();
     }
-    const parsedData = S.parseOrThrow(data, getBlockDataSchema);
+
+    let data: any;
+    try {
+      data = await fetchFrom(firstUrl);
+    } catch (error) {
+      if (secondUrl) {
+        context.log.warn(`RPC fetch failed; retrying with alternate RPC`, {
+          slot: input.slot,
+          error: String(error),
+        });
+        data = await fetchFrom(secondUrl);
+      } else {
+        context.log.warn(`Failed to fetch/parse block data`, { slot: input.slot, error: String(error) });
+        return null;
+      }
+    }
+
+    let parsedData: any;
+    try {
+      parsedData = S.parseOrThrow(data, getBlockDataSchema);
+    } catch (error) {
+      // If a provider returns an incompatible instruction shape, retry on the alternate RPC.
+      if (secondUrl) {
+        context.log.warn(`Block parse failed; retrying with alternate RPC`, { slot: input.slot });
+        const retryData = await fetchFrom(secondUrl);
+        parsedData = S.parseOrThrow(retryData, getBlockDataSchema);
+      } else {
+        throw error;
+      }
+    }
+
     if (parsedData.error) {
        // Check if it is a "skipped slot" or "ledger jump" error
        if (parsedData.error.includes("skipped") || parsedData.error.includes("missing")) {
@@ -79,8 +130,9 @@ indexer.onSlot({ name: "BlockTracker" }, async ({ slot, context }) => {
 
     // Process top-level instructions
     tx.transaction.message.instructions.forEach((inst, index) => {
+      const normalizedInst = normalizeInstructionProgramId(inst as any, tx.transaction.message as any);
       const transfer = processInstruction(
-        inst as any,
+        normalizedInst as any,
         tx.meta?.preTokenBalances as any,
         tx.meta?.postTokenBalances as any
       );
@@ -106,8 +158,9 @@ indexer.onSlot({ name: "BlockTracker" }, async ({ slot, context }) => {
     if (tx.meta.innerInstructions) {
       tx.meta.innerInstructions.forEach((inner) => {
         inner.instructions.forEach((inst, innerIndex) => {
+          const normalizedInst = normalizeInstructionProgramId(inst as any, tx.transaction.message as any);
           const transfer = processInstruction(
-            inst as any,
+            normalizedInst as any,
             tx.meta?.preTokenBalances as any,
             tx.meta?.postTokenBalances as any
           );
