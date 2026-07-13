@@ -1,7 +1,34 @@
 # yaml-language-server: $schema=./node_modules/envio/svm.schema.json
-name: solana-block-handler
+name: solana-stables-indexer
 ecosystem: svm
-full_batch_size: 10
 chains:
   - rpc: ${ENVIO_MAINNET_RPC_URL:-https://api.mainnet-beta.solana.com}
-    start_block: 417949522
+    start_block: 420620000
+    experimental:
+      hypersync_config:
+        # solana.hypersync.xyz was refusing connections on 2026-07-13; demo2 serves
+        # a rolling window (~416.8M+). Switch back once the main endpoint is up.
+        url: https://solana-demo2.hypersync.xyz
+      programs:
+        - name: SplToken
+          program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+          instructions:
+            - name: TransferChecked
+              discriminator: "0x0c"
+              args:
+                - { name: amount, type: u64 }
+                - { name: decimals, type: u8 }
+              accounts:
+                - source
+                - mint
+                - destination
+                - authority
+              field_selection:
+                transaction_fields:
+                  - signatures
+                  - success
+              account_filters:
+                - position: 1
+                  values:
+                    - EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v # USDC mint
+                    - Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB # USDT mint
