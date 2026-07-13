@@ -1,12 +1,5 @@
-type BlockInfo {
-  id: ID!
-  hash: String!
-  height: Int @index
-  time: Timestamp
-}
-
 type Transfer {
-  id: ID! # transactionHash-index
+  id: ID! # transactionHash-instructionAddress
   transactionHash: String!
   slot: Int! @index
   timestamp: Timestamp!
@@ -19,7 +12,7 @@ type Transfer {
 }
 
 type TransferSummary {
-  id: ID! # Timestamp of the start of the minute (bucket)
+  id: ID! # Fixed: "LATEST_SUMMARY"
   minute: String! # ISO timestamp
   totalTransfers: Int!
   totalVolumeUSD: BigDecimal!

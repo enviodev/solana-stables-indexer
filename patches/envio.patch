@@ -1,0 +1,17 @@
+diff --git a/src/Config.res.mjs b/src/Config.res.mjs
+index 9bde31b5e37b500ecbf829804a3892c4dfec49e2..559dde52f553411ab269322cc5901375a932e07b 100644
+--- a/src/Config.res.mjs
++++ b/src/Config.res.mjs
+@@ -115,10 +115,10 @@ let svmEventDescriptorSchema = S$RescriptSchema.schema(s => ({
+   transactionFields: s.m(S$RescriptSchema.array(Internal.svmTransactionFieldSchema)),
+   blockFields: s.m(S$RescriptSchema.option(S$RescriptSchema.array(Internal.svmBlockFieldSchema))),
+   includeLogs: s.m(S$RescriptSchema.bool),
+-  accountFilters: s.m(S$RescriptSchema.option(S$RescriptSchema.array(S$RescriptSchema.schema(s => ({
++  accountFilters: s.m(S$RescriptSchema.option(S$RescriptSchema.array(S$RescriptSchema.array(S$RescriptSchema.schema(s => ({
+     position: s.m(S$RescriptSchema.int),
+     values: s.m(S$RescriptSchema.array(S$RescriptSchema.string))
+-  }))))),
++  })))))),
+   isInner: s.m(S$RescriptSchema.option(S$RescriptSchema.bool)),
+   accounts: s.m(S$RescriptSchema.option(S$RescriptSchema.array(S$RescriptSchema.string))),
+   args: s.m(S$RescriptSchema.option(S$RescriptSchema.json(false)))
