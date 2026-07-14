@@ -6,7 +6,7 @@
     "codegen": "envio codegen",
     "dev": "envio dev",
     "start": "envio start",
-    "test": "tsc --noEmit && vitest run"
+    "test": "tsc --noEmit && vitest run --passWithNoTests"
   },
   "devDependencies": {
     "@types/node": "24.12.2",
@@ -14,7 +14,7 @@
     "vitest": "4.1.0"
   },
   "dependencies": {
-    "envio": "3.0.0-alpha.24"
+    "envio": "3.2.1"
   },
   "engines": {
     "node": ">=22.0.0"

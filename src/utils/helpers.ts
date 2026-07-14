@@ -33,7 +33,6 @@ export interface ProcessedTransfer {
   receiver: string;
 }
 
-
 /**
  * Extracts a transfer event from a single instruction if it matches criteria.
  */
