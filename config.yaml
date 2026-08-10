@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=./node_modules/envio/svm.schema.json
 name: solana-block-handler
+disable_default_cross_chain: true # recommended; default in HyperIndex v4
 ecosystem: svm
 full_batch_size: 10
 chains:
