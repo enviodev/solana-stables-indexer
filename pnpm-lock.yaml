@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       envio:
-        specifier: 3.6.1
-        version: 3.6.1(react-dom@19.2.5(react@19.2.5))(typescript@6.0.3)
+        specifier: 3.7.0-svm-alpha.1
+        version: 3.7.0-svm-alpha.1(react-dom@19.2.5(react@19.2.5))(typescript@6.0.3)
     devDependencies:
       '@types/node':
         specifier: 24.12.2
@@ -33,6 +33,7 @@ packages:
 
   '@clickhouse/client-common@1.17.0':
     resolution: {integrity: sha512-MiwwgXViFAQA2YZkN4ymF1ynzG0K49KeSX9/iOcmJetWkxqSekDdpyp1GjwATWa9R215uQ+hGzJtJujeQVZZIw==}
+    deprecated: 'Deprecated: import from @clickhouse/client or @clickhouse/client-web instead.'
 
   '@clickhouse/client@1.17.0':
     resolution: {integrity: sha512-Y3DQoamKZ/Iyosoq7Lj7lqpDkQDK4R/5mI52yJs4ZLPIO+d6/CYDqTbFBIb4No3C/AlXUYE4TKhj/kXDpe6rOA==}
@@ -316,42 +317,36 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-arm64-musl@1.0.0-rc.17':
     resolution: {integrity: sha512-b/CgbwAJpmrRLp02RPfhbudf5tZnN9nsPWK82znefso832etkem8H7FSZwxrOI9djcdTP7U6YfNhbRnh7djErg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@rolldown/binding-linux-ppc64-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-4EII1iNGRUN5WwGbF/kOh/EIkoDN9HsupgLQoXfY+D1oyJm7/F4t5PYU5n8SWZgG0FEwakyM8pGgwcBYruGTlA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-s390x-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-AH8oq3XqQo4IibpVXvPeLDI5pzkpYn0WiZAfT05kFzoJ6tQNzwRdDYQ45M8I/gslbodRZwW8uxLhbSBbkv96rA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-x64-gnu@1.0.0-rc.17':
     resolution: {integrity: sha512-cLnjV3xfo7KslbU41Z7z8BH/E1y5mzUYzAqih1d1MDaIGZRCMqTijqLv76/P7fyHuvUcfGsIpqCdddbxLLK9rA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@rolldown/binding-linux-x64-musl@1.0.0-rc.17':
     resolution: {integrity: sha512-0phclDw1spsL7dUB37sIARuis2tAgomCJXAHZlpt8PXZ4Ba0dRP1e+66lsRqrfhISeN9bEGNjQs+T/Fbd7oYGw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@rolldown/binding-openharmony-arm64@1.0.0-rc.17':
     resolution: {integrity: sha512-0ag/hEgXOwgw4t8QyQvUCxvEg+V0KBcA6YuOx9g0r02MprutRF5dyljgm3EmR02O292UX7UeS6HzWHAl6KgyhA==}
@@ -652,36 +647,33 @@ packages:
   end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
 
-  envio-darwin-arm64@3.6.1:
-    resolution: {integrity: sha512-ecGuGkptoCbfH5ULq4yAhRRB8pAK8pzQp6JahmBsH7dYSOmgM8xQRqgS5QwVgjrfQWl5GH3S4dyZpnSsCNcy+w==}
+  envio-darwin-arm64@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-yjtup6vZeNdlswURvj2h2FLCRlV/Ftwbsve0Mh0Mym4Txei/9m7h6d6H0txWEOXs6Asb6v9M8jKtyy/Jk1rwCQ==}
     cpu: [arm64]
     os: [darwin]
 
-  envio-darwin-x64@3.6.1:
-    resolution: {integrity: sha512-zADvYOhv8Yjsp4a5AooJg4kRPKcidyjljru8XpUIIvLq5VdHQcs/5r1EnhDwPgA2Y9gBqTNCWZJ80pQs6Vg/0g==}
+  envio-darwin-x64@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-mdmbb4LvHGnrb1RLVxT+LLvwq9D+XiPFzCgE2Ia7eHNL69lRxJfI3ICLVlwC2JBqaRZsiYdPHwSzZn49a/cCJg==}
     cpu: [x64]
     os: [darwin]
 
-  envio-linux-arm64@3.6.1:
-    resolution: {integrity: sha512-dTbMq6BtAn0tEduGHdunyomIVNVTx32pr7tzRDdJ/rlPQxdNDkKboPIFeuxMoTiLKtUIyrkDRb/KZUNna72suQ==}
+  envio-linux-arm64@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-GAlZ4YFPDOzwy9a5mzWSPpWj182rNQLHjh0ZFCK2bQZj9bQtt3LMt797fpVmagqDsENXtfrcqdbtFFrHjIIDFg==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
-  envio-linux-x64-musl@3.6.1:
-    resolution: {integrity: sha512-APwQYvKhzMEsrWsKAhjx2+p8kqJi00Oz46YyW7Ln005pt96Am6ACqC7pWoo5J5Zuui8Y2lR4wJmEWKZeH9pkRQ==}
+  envio-linux-x64-musl@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-awjssTm9DFOIYcIy9KauAue9uv+3hBc1IwG8uJm+dJD8m4ipKp3nnxBLUWD8rzHJhcagv0qRYXM88QiMLCfbug==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
-  envio-linux-x64@3.6.1:
-    resolution: {integrity: sha512-eynhAQXaEimq/QT0REEXPqjAs3J7rURymL7PRSXBvrfQVUUKjiO4l5S9jL5jlSpWpZR4o2xcW6xZAuk7O1B9sw==}
+  envio-linux-x64@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-FQxMAIFjb1NFGgWCT5zN2isdlEuaOljyKViBvW7cFcDdzJCRxgjIxJBsOZTXeThQJi9Cf0Vw1siAz4Gbbt5lag==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
-  envio@3.6.1:
-    resolution: {integrity: sha512-n8N3ih7rEL6saDTXPOI1sxwruaD4HfJBtNnrlrmDDzv9Ccj8IFElBQJc+JvSIfT8TwzVZynPiHiL6e/gvtc7fg==}
+  envio@3.7.0-svm-alpha.1:
+    resolution: {integrity: sha512-7s6tliugc2l4v+KtzrKfAZheHCr/nyEbhELfW9dSiBCr2l0pceZZE9d7VASn6SVpQFAeIMOf76hY0Aj+ObsnpQ==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
@@ -970,28 +962,24 @@ packages:
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   lightningcss-linux-arm64-musl@1.32.0:
     resolution: {integrity: sha512-UpQkoenr4UJEzgVIYpI80lDFvRmPVg6oqboNHfoH4CQIfNA+HOrZ7Mo7KZP02dC6LjghPQJeBsvXhJod/wnIBg==}
     engines: {node: '>= 12.0.0'}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   lightningcss-linux-x64-gnu@1.32.0:
     resolution: {integrity: sha512-V7Qr52IhZmdKPVr+Vtw8o+WLsQJYCTd8loIfpDaMRWGUZfBOYEJeyJIkqGIDMZPwPx24pUMfwSxxI8phr/MbOA==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   lightningcss-linux-x64-musl@1.32.0:
     resolution: {integrity: sha512-bYcLp+Vb0awsiXg/80uCRezCYHNg1/l3mt0gzHnWV9XP1W5sKa5/TCdGWaR/zBM2PeF/HbsQv/j2URNOiVuxWg==}
     engines: {node: '>= 12.0.0'}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   lightningcss-win32-arm64-msvc@1.32.0:
     resolution: {integrity: sha512-8SbC8BR40pS6baCM8sbtYDSwEVQd4JlFTOlaD3gWGHfThTcABnNDBda6eTZeqbofalIJhFx0qKzgHJmcPTnGdw==}
@@ -1519,18 +1507,6 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
-  ws@8.20.0:
-    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   ws@8.20.1:
     resolution: {integrity: sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w==}
     engines: {node: '>=10.0.0'}
@@ -2051,22 +2027,22 @@ snapshots:
     dependencies:
       once: 1.4.0
 
-  envio-darwin-arm64@3.6.1:
+  envio-darwin-arm64@3.7.0-svm-alpha.1:
     optional: true
 
-  envio-darwin-x64@3.6.1:
+  envio-darwin-x64@3.7.0-svm-alpha.1:
     optional: true
 
-  envio-linux-arm64@3.6.1:
+  envio-linux-arm64@3.7.0-svm-alpha.1:
     optional: true
 
-  envio-linux-x64-musl@3.6.1:
+  envio-linux-x64-musl@3.7.0-svm-alpha.1:
     optional: true
 
-  envio-linux-x64@3.6.1:
+  envio-linux-x64@3.7.0-svm-alpha.1:
     optional: true
 
-  envio@3.6.1(react-dom@19.2.5(react@19.2.5))(typescript@6.0.3):
+  envio@3.7.0-svm-alpha.1(react-dom@19.2.5(react@19.2.5))(typescript@6.0.3):
     dependencies:
       '@clickhouse/client': 1.17.0
       '@elastic/ecs-pino-format': 1.4.0
@@ -2095,11 +2071,11 @@ snapshots:
       viem: 2.54.0(typescript@6.0.3)
       yargs: 17.7.2
     optionalDependencies:
-      envio-darwin-arm64: 3.6.1
-      envio-darwin-x64: 3.6.1
-      envio-linux-arm64: 3.6.1
-      envio-linux-x64: 3.6.1
-      envio-linux-x64-musl: 3.6.1
+      envio-darwin-arm64: 3.7.0-svm-alpha.1
+      envio-darwin-x64: 3.7.0-svm-alpha.1
+      envio-linux-arm64: 3.7.0-svm-alpha.1
+      envio-linux-x64: 3.7.0-svm-alpha.1
+      envio-linux-x64-musl: 3.7.0-svm-alpha.1
     transitivePeerDependencies:
       - '@types/react'
       - bufferutil
@@ -2347,7 +2323,7 @@ snapshots:
       type-fest: 5.6.0
       widest-line: 6.0.0
       wrap-ansi: 9.0.2
-      ws: 8.20.0
+      ws: 8.20.1
       yoga-layout: 3.2.1
     transitivePeerDependencies:
       - bufferutil
@@ -2929,8 +2905,6 @@ snapshots:
       strip-ansi: 7.2.0
 
   wrappy@1.0.2: {}
-
-  ws@8.20.0: {}
 
   ws@8.20.1: {}
 
