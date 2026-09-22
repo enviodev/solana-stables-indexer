@@ -27,7 +27,6 @@ function normalizeInstructionProgramId(inst: any, message: any): any {
 
 const getBlockEffect = createEffect(
   {
-    rateLimit: false,
     name: "getBlock",
     input: { slot: S.number },
     output: nullableBlockSchema,
