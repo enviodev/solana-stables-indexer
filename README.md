@@ -46,7 +46,7 @@ indexer.onInstruction(
     where: { accounts: { mint: STABLE_MINT_LIST } }, // USDC + USDT, applied by HyperSync
   },
   async ({ instruction, context }) => {
-    if (instruction.transaction.success !== true) return; // HyperSync serves failed txs too
+    if (instruction.transaction.success !== true) return; // belt and braces, see below
     ...
   },
 );
@@ -54,8 +54,9 @@ indexer.onInstruction(
 
 Design notes:
 
-- **Failed transactions are skipped.** HyperSync serves instructions from failed
-  transactions; counting them would inflate volume.
+- **Failed transactions never reach the handler.** HyperSync excludes them at the
+  source on envio 3.12.1 (measured: 0 of 60,272 `TransferChecked` instructions in a
+  100-slot window). The `success` guard stays as a cheap safety net.
 - **Legacy `Transfer` costs more.** It cannot be narrowed by mint on the server, so the
   indexer ingests every SPL `Transfer` on Solana and keeps the stablecoin ones. On the
   2026-09-23 sample window below this was roughly 40% of the recorded transfers, so it is
