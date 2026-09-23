@@ -1,8 +1,29 @@
 # yaml-language-server: $schema=./node_modules/envio/svm.schema.json
-name: solana-block-handler
-disable_default_cross_chain: true # recommended; default in HyperIndex v4
+name: solana-stables-indexer
 ecosystem: svm
-full_batch_size: 10
 chains:
-  - rpc: ${ENVIO_MAINNET_RPC_URL:-https://api.mainnet-beta.solana.com}
-    start_block: 417949522
+  - id: solana
+    # A slot number, not a block height. Override to backfill further.
+    start_slot: ${ENVIO_START_SLOT:-449674151}
+    # Unset = live tailing. Set to pin a finite backfill (tests, benchmarks).
+    end_slot: ${ENVIO_END_SLOT:-}
+programs:
+  - name: SplToken
+    program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+    instructions:
+      # Carries the mint as an account, so the handler narrows it to
+      # USDC/USDT server-side via `where.accounts.mint`.
+      - name: TransferChecked
+        discriminator: "0x0c"
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+        accounts: [source, mint, destination, authority]
+      # Legacy Transfer has no mint account. Every SPL transfer is fetched
+      # and the handler resolves the mint from the source account's token
+      # activity, keeping only USDC/USDT.
+      - name: Transfer
+        discriminator: "0x03"
+        args:
+          - { name: amount, type: u64 }
+        accounts: [source, destination, authority]

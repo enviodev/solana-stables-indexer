@@ -1,26 +1,20 @@
-type BlockInfo {
-  id: ID!
-  hash: String!
-  height: Int @index
-  time: Timestamp
-}
-
 type Transfer {
-  id: ID! # transactionHash-index
-  transactionHash: String!
+  id: ID! # <signature>:<instruction path>
+  signature: String! @index
+  instruction: String! # TransferChecked | Transfer
   slot: Int! @index
-  timestamp: Timestamp!
-  sender: String!
-  receiver: String!
-  mint: String!
+  timestamp: Timestamp! @index
+  sender: String! @index # source token account
+  receiver: String! @index # destination token account
+  mint: String! @index
   symbol: String!
-  amount: BigInt! # Raw amount
-  amountDisplay: BigDecimal! # UI amount
+  amount: BigInt! # raw amount in base units
+  amountDisplay: BigDecimal! # amount / 10^decimals
 }
 
 type TransferSummary {
-  id: ID! # Timestamp of the start of the minute (bucket)
-  minute: String! # ISO timestamp
+  id: ID! # unix minute (timestamp / 60)
+  minute: Timestamp! @index
   totalTransfers: Int!
   totalVolumeUSD: BigDecimal!
   usdcTransfers: Int!
