@@ -1,52 +1,106 @@
-# Solana Block Handler
+# Solana Stablecoin Transfers Indexer
 
-_Please refer to the [documentation website](https://docs.envio.dev) for a thorough guide on all [Envio](https://envio.dev) indexer features_
+An [Envio HyperIndex](https://docs.envio.dev) indexer for **USDC and USDT transfers on
+Solana**, served by [HyperSync](https://docs.envio.dev/docs/HyperSync/overview) rather
+than RPC block scanning. It records every successful SPL Token transfer of either
+stablecoin and rolls them up into per-minute volume summaries.
 
-This example demonstrates how to index **Solana blocks** using a block handler. The handler fetches block data from a Solana RPC endpoint and stores block information.
+## How it indexes stablecoin transfers
 
-For more information, see the [block handlers documentation](https://docs.envio.dev/docs/HyperIndex/block-handlers).
+SPL Token has two transfer instructions, and they need different treatment:
 
-## Block Handler
+| Instruction | Discriminator | Mint available at | Filtering |
+| --- | --- | --- | --- |
+| `TransferChecked` | `0x0c` | account slot 1 | Server-side: `where.accounts.mint` narrows HyperSync to USDC/USDT only |
+| `Transfer` (legacy) | `0x03` | not in the instruction | Handler-side: the mint is read from the source token account's balance activity |
 
-The `onBlock` handler is triggered for each block at the specified interval. This example uses an effect to fetch additional block data from the Solana RPC:
+Both are declared once in `config.yaml` with an inline Borsh schema (no IDL needed):
+
+```yaml
+programs:
+  - name: SplToken
+    program_id: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA
+    instructions:
+      - name: TransferChecked
+        discriminator: "0x0c"
+        args:
+          - { name: amount, type: u64 }
+          - { name: decimals, type: u8 }
+        accounts: [source, mint, destination, authority]
+      - name: Transfer
+        discriminator: "0x03"
+        args:
+          - { name: amount, type: u64 }
+        accounts: [source, destination, authority]
+```
+
+The handlers in `src/handlers/TransferHandler.ts` select only the fields they use and
+share one `recordTransfer` path:
 
 ```ts
-onBlock({ chain: 0, name: "BlockTracker" }, async ({ slot, context }) => {
-  const block = await context.effect(getBlockEffect, { slot });
-  // Process block data...
-});
+indexer.onInstruction(
+  {
+    program: "SplToken",
+    instruction: "TransferChecked",
+    fields,
+    where: { accounts: { mint: STABLE_MINT_LIST } }, // USDC + USDT, applied by HyperSync
+  },
+  async ({ instruction, context }) => {
+    if (instruction.transaction.success !== true) return; // HyperSync serves failed txs too
+    ...
+  },
+);
 ```
+
+Design notes:
+
+- **Failed transactions are skipped.** HyperSync serves instructions from failed
+  transactions; counting them would inflate volume.
+- **Legacy `Transfer` costs more.** It cannot be narrowed by mint on the server, so the
+  indexer ingests every SPL `Transfer` on Solana and keeps the stablecoin ones. On the
+  2026-09-23 sample window below this was roughly 40% of the recorded transfers, so it is
+  worth the cost. Remove that instruction from `config.yaml` and its handler if you only
+  need `TransferChecked`.
+- **Zero-value transfers are real** and are recorded as such.
+- **Ids are `<signature>:<instruction path>`**, which is unique per CPI call.
+
+## Entities
+
+- `Transfer`: one row per stablecoin transfer (signature, instruction kind, slot,
+  timestamp, source and destination token accounts, mint, symbol, raw and display amount).
+- `TransferSummary`: one row per minute (`id` = unix minute) with transfer counts and USD
+  volume, total and per symbol.
 
 ## Prerequisites
 
-Before running the indexer locally, make sure you have the following installed:
+- [Node.js 22+](https://nodejs.org/en/download/)
+- [pnpm](https://pnpm.io/installation)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local Postgres)
+- A HyperSync API token in `.env` (copy `.env.example`)
 
-- **[Node.js 22+](https://nodejs.org/en/download/)**
-- **[pnpm](https://pnpm.io/installation)**
-- **[Docker Desktop](https://www.docker.com/products/docker-desktop/)**
-
-## Configuration
-
-Add your Solana RPC URL to the `.env` file:
-
-```
-ENVIO_MAINNET_RPC_URL=https://your-solana-rpc-endpoint
-```
-
-## Running the Indexer
-
-Start the indexer:
+## Running
 
 ```bash
-pnpm dev
+pnpm install
+pnpm dev          # codegen + start; open the console at https://envio.dev/console
 ```
 
-If you make changes to `config.yaml` or `schema.graphql`, regenerate the type files:
+`config.yaml` starts a few thousand slots behind head by default. Override with
+`ENVIO_START_SLOT`, and pin `ENVIO_END_SLOT` for a finite backfill.
+
+## Testing
 
 ```bash
-pnpm codegen
+pnpm test
 ```
 
-## GraphQL Playground
+The test runs the real handlers over a pinned 100-slot mainnet window through
+HyperSync (`ENVIO_API_TOKEN` required) and asserts that only USDC/USDT rows are
+written, that both instruction kinds decode, and that the minute summaries reconcile
+with the transfers. It exists because a wrong discriminator or account layout runs green
+and writes nothing; only real data proves the config.
 
-While the indexer is running, visit the Envio Console ([https://envio.dev/console](https://envio.dev/console)) to open the GraphQL Playground and query your indexed data.
+Measured on 2026-09-23 with `envio start` against local Postgres, slots 449674151 to
+449681519 (about 50 minutes of chain): 316,205 transfers (188,172 `TransferChecked`,
+128,033 `Transfer`; 268,599 USDC, 47,606 USDT) in about two and a half minutes of wall
+clock, then live tailing.
