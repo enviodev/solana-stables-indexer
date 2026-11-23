@@ -1,17 +1,22 @@
+# Rolling window, not a full history: only transfers of $1 and up are stored,
+# and rows older than ENVIO_RETENTION_HOURS (default 6) are pruned by the
+# handler. Indexes are limited to what the dashboard and the prune query use.
 type Transfer {
   id: ID! # <signature>:<instruction path>
-  signature: String! @index
+  signature: String!
   instruction: String! # TransferChecked | Transfer
   slot: Int! @index
   timestamp: Timestamp! @index
-  sender: String! @index # source token account
-  receiver: String! @index # destination token account
-  mint: String! @index
+  sender: String! # source token account
+  receiver: String! # destination token account
+  mint: String!
   symbol: String!
   amount: BigInt! # raw amount in base units
   amountDisplay: BigDecimal! # amount / 10^decimals
 }
 
+# Kept forever and never pruned. Totals count every transfer, including the
+# sub-$1 ones that are not stored as Transfer rows.
 type TransferSummary {
   id: ID! # unix minute (timestamp / 60)
   minute: Timestamp! @index

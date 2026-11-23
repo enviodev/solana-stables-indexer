@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createTestIndexer } from "envio";
-import { STABLE_MINTS, USDC_MINT, USDT_MINT } from "../src/utils/constants";
+import { MIN_STORED_USD, STABLE_MINTS, USDC_MINT, USDT_MINT } from "../src/utils/constants";
 
 const SOLANA = 7565164;
 
@@ -28,13 +28,12 @@ describe("stablecoin transfers over a pinned window", () => {
         expect(t.slot).toBeGreaterThanOrEqual(START_SLOT);
         expect(t.slot).toBeLessThanOrEqual(END_SLOT);
         expect(t.timestamp.getUTCFullYear()).toBeGreaterThanOrEqual(2026);
-        expect(t.amount).toBeGreaterThanOrEqual(0n); // zero-value SPL transfers exist on chain
+        // Transfers under MIN_STORED_USD are counted in the summaries but not stored.
+        expect(t.amountDisplay.gte(MIN_STORED_USD)).toBe(true);
         expect(t.amountDisplay.toString()).toBe(
           (Number(t.amount) / 1e6).toString(),
         );
       }
-
-      expect(transfers.some((t) => t.amount > 0n)).toBe(true);
 
       const kinds = new Set(transfers.map((t) => t.instruction));
       expect(kinds.has("TransferChecked")).toBe(true);
@@ -43,7 +42,9 @@ describe("stablecoin transfers over a pinned window", () => {
 
       const summaries = await indexer.TransferSummary.getAll();
       const total = summaries.reduce((n, s) => n + s.totalTransfers, 0);
-      expect(total).toBe(transfers.length);
+      // Summaries count every transfer, so they exceed the stored rows by the
+      // sub-$1 transfers that were skipped.
+      expect(total).toBeGreaterThan(transfers.length);
       for (const s of summaries) {
         expect(s.usdcTransfers + s.usdtTransfers).toBe(s.totalTransfers);
         expect(s.totalVolumeUSD.toString()).toBe(

@@ -1,5 +1,11 @@
 import { indexer, BigDecimal, type SvmFieldsSelection } from "envio";
-import { STABLE_MINTS, STABLE_MINT_LIST } from "../utils/constants";
+import {
+  MIN_STORED_USD,
+  STABLE_MINTS,
+  STABLE_MINT_LIST,
+  pruneIntervalMinutes,
+  retentionSeconds,
+} from "../utils/constants";
 
 // Both handlers select the same payload so they can share `recordTransfer`.
 const fields = {
@@ -96,27 +102,45 @@ type HandlerContext = Parameters<
   Parameters<typeof indexer.onInstruction>[1]
 >[0]["context"];
 
+const RETENTION_SECONDS = retentionSeconds();
+const PRUNE_INTERVAL_MINUTES = pruneIntervalMinutes();
+
 async function recordTransfer(context: HandlerContext, t: TransferInput) {
   const amountDisplay = new BigDecimal(t.amount.toString()).shiftedBy(-t.decimals);
   const timestamp = new Date(t.blockTime * 1000);
 
-  context.Transfer.set({
-    id: t.id,
-    signature: t.signature,
-    instruction: t.instruction,
-    slot: t.slot,
-    timestamp,
-    sender: t.sender,
-    receiver: t.receiver,
-    mint: t.mint,
-    symbol: t.symbol,
-    amount: t.amount,
-    amountDisplay,
-  });
+  // Storage is deliberately bounded. Transfers under MIN_STORED_USD are not
+  // written as rows (the dashboard cannot show them), but they still count in
+  // the minute summary below. Do not move the summary update inside this `if`.
+  if (amountDisplay.gte(MIN_STORED_USD)) {
+    context.Transfer.set({
+      id: t.id,
+      signature: t.signature,
+      instruction: t.instruction,
+      slot: t.slot,
+      timestamp,
+      sender: t.sender,
+      receiver: t.receiver,
+      mint: t.mint,
+      symbol: t.symbol,
+      amount: t.amount,
+      amountDisplay,
+    });
+  }
 
   const minuteIndex = Math.floor(t.blockTime / 60);
   const summaryId = minuteIndex.toString();
-  const summary = (await context.TransferSummary.get(summaryId)) ?? {
+  const existing = await context.TransferSummary.get(summaryId);
+
+  // No summary yet means this is the first transfer of a new chain minute, so
+  // this branch runs once a minute rather than once per transfer. That is the
+  // cue to prune: it keeps the cleanup off the hot path so the indexer stays
+  // real time.
+  if (!existing && !context.isPreload && minuteIndex % PRUNE_INTERVAL_MINUTES === 0) {
+    await pruneOldTransfers(context, minuteIndex * 60);
+  }
+
+  const summary = existing ?? {
     id: summaryId,
     minute: new Date(minuteIndex * 60 * 1000),
     totalTransfers: 0,
@@ -136,4 +160,14 @@ async function recordTransfer(context: HandlerContext, t: TransferInput) {
     usdcVolumeUSD: isUsdc ? summary.usdcVolumeUSD.plus(amountDisplay) : summary.usdcVolumeUSD,
     usdtVolumeUSD: isUsdc ? summary.usdtVolumeUSD : summary.usdtVolumeUSD.plus(amountDisplay),
   });
+}
+
+// Deletes Transfer rows older than the retention window, measured in chain
+// time from the start of the minute that just began. In steady state each call
+// removes only the single minute that just expired, so its cost does not grow
+// with the retention length. TransferSummary rows are never deleted.
+async function pruneOldTransfers(context: HandlerContext, minuteStart: number) {
+  const cutoff = new Date((minuteStart - RETENTION_SECONDS) * 1000);
+  const expired = await context.Transfer.getWhere({ timestamp: { _lt: cutoff } });
+  for (const row of expired) context.Transfer.deleteUnsafe(row.id);
 }
