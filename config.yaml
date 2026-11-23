@@ -3,8 +3,10 @@ name: solana-stables-indexer
 ecosystem: svm
 chains:
   - id: solana
-    # A slot number, not a block height. Override to backfill further.
-    start_slot: ${ENVIO_START_SLOT:-449674151}
+    # "latest" starts at the chain head on first deploy; the resolved slot is
+    # persisted, so a crash or restart backfills the downtime instead of
+    # skipping it. Override with a slot number (not a block height) to backfill.
+    start_slot: ${ENVIO_START_SLOT:-latest}
     # Unset = live tailing. Set to pin a finite backfill (tests, benchmarks).
     end_slot: ${ENVIO_END_SLOT:-}
 programs:
